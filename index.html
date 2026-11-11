@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RVLoss | Runoff Vote Loss for Self-Supervised LiDAR Scene Flow · NeurIPS 2026</title>
+  <meta name="description" content="RVLoss: a self-supervised loss that builds motion rigidity into LiDAR scene flow training through a two-stage runoff vote. NeurIPS 2026.">
+  <meta name="keywords" content="RVLoss, runoff vote, LiDAR scene flow, self-supervised learning, autonomous driving, NeurIPS 2026">
+  <meta name="theme-color" content="#00a6d6">
+  <link rel="canonical" href="https://tudelft-iv.github.io/RVLoss/">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="RVLoss: Runoff Vote Loss for Self-Supervised LiDAR Scene Flow Estimation">
+  <meta property="og:description" content="Motion rigidity by design: two-stage runoff voting creates rigid and free-form pseudo-labels for self-supervised scene flow. NeurIPS 2026.">
+  <meta property="og:url" content="https://tudelft-iv.github.io/RVLoss/">
+  <meta property="og:image" content="https://tudelft-iv.github.io/RVLoss/static/images/fig1_runoff_vote.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2300a6d6'/%3E%3Ctext x='32' y='42' font-family='Arial,Helvetica,sans-serif' font-size='26' font-weight='700' fill='white' text-anchor='middle'%3ERV%3C/text%3E%3C/svg%3E">
+  <style>
+    :root {
+      --bg: #ffffff;
+      --surface: #f4f7fa;
+      --text: #14212b;
+      --muted: #5b6b78;
+      --line: #dfe6ec;
+      --accent: #00a6d6;
+      --accent-strong: #007fa6;
+      --accent-soft: #e3f5fb;
+      --notice-bg: #fff7e0;
+      --notice-line: #f1d48a;
+      --notice-text: #6b5210;
+      --figure-bg: #ffffff;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #0f171e;
+        --surface: #16222c;
+        --text: #e6edf2;
+        --muted: #9fb0bd;
+        --line: #26343f;
+        --accent: #33c0e8;
+        --accent-strong: #6fd4f1;
+        --accent-soft: #12303d;
+        --notice-bg: #2b2412;
+        --notice-line: #5c4a1c;
+        --notice-text: #f0d999;
+        --figure-bg: #ffffff;
+      }
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-size: 17px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: var(--accent-strong); }
+    .container { width: 100%; max-width: 980px; margin: 0 auto; padding: 0 20px; }
+
+    /* Hero */
+    .hero { text-align: center; padding-top: 64px; padding-bottom: 28px; }
+    .eyebrow {
+      display: inline-block; margin: 0 0 18px; padding: 4px 14px;
+      border-radius: 999px; background: var(--accent-soft); color: var(--accent-strong);
+      font-size: 14px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+    }
+    h1 { margin: 0; font-weight: 800; line-height: 1.15; }
+    .project-name { display: block; font-size: clamp(44px, 9vw, 76px); letter-spacing: -.02em; color: var(--accent); }
+    .paper-subtitle { display: block; margin-top: 10px; font-size: clamp(21px, 3.4vw, 31px); font-weight: 650; }
+    .authors { margin: 26px 0 4px; font-size: 18px; }
+    .author { white-space: nowrap; }
+    .authors a { color: var(--text); text-decoration: none; border-bottom: 1px solid var(--line); }
+    .authors a:hover { color: var(--accent-strong); border-bottom-color: var(--accent); }
+    .authors .sep { color: var(--muted); margin: 0 6px; }
+    sup { font-size: .68em; color: var(--muted); }
+    .affiliations { margin: 4px 0 0; color: var(--muted); font-size: 15.5px; }
+    .affiliations span { white-space: nowrap; margin: 0 8px; }
+
+    .links { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin: 30px 0 0; }
+    .button {
+      display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px;
+      border-radius: 999px; border: 1px solid var(--line); background: var(--surface);
+      color: var(--text); font-weight: 650; font-size: 15.5px; text-decoration: none;
+      transition: border-color .15s, color .15s, background .15s;
+    }
+    .button:hover { border-color: var(--accent); color: var(--accent-strong); }
+    .button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .button.primary:hover { background: var(--accent-strong); border-color: var(--accent-strong); color: #fff; }
+    .button.soon { cursor: default; color: var(--muted); }
+    .button.soon:hover { border-color: var(--line); color: var(--muted); }
+    .badge { font-size: 11.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+      padding: 2px 8px; border-radius: 999px; background: var(--line); color: var(--muted); }
+
+    .notice {
+      margin: 30px auto 0; max-width: 720px; padding: 12px 18px; border-radius: 12px;
+      background: var(--notice-bg); border: 1px solid var(--notice-line); color: var(--notice-text);
+      font-size: 15px; text-align: center;
+    }
+
+    /* Sections */
+    section { padding: 36px 0; }
+    h2 { margin: 0 0 16px; font-size: 26px; font-weight: 750; letter-spacing: -.01em; }
+    .figure { margin: 0; padding: 18px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); }
+    .figure-media { padding: 14px; border-radius: 10px; background: var(--figure-bg); }
+    .figure img { display: block; width: 100%; height: auto; }
+    figcaption { margin-top: 12px; color: var(--muted); font-size: 15px; text-align: left; }
+    figcaption strong { color: var(--text); }
+    .abstract p { margin: 0; text-align: justify; hyphens: auto; }
+
+    .highlights { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .card { padding: 22px 20px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); }
+    .card .value { font-size: 34px; font-weight: 800; color: var(--accent-strong); line-height: 1.1; letter-spacing: -.01em; }
+    .card .value small { font-size: 17px; font-weight: 650; color: var(--muted); margin-left: 4px; }
+    .card .label { margin-top: 10px; font-weight: 700; }
+    .card .detail { margin-top: 6px; color: var(--muted); font-size: 14.5px; line-height: 1.5; }
+
+    .bibtex-wrap { position: relative; }
+    pre {
+      margin: 0; padding: 20px 22px; overflow-x: auto; border-radius: 14px;
+      background: var(--surface); border: 1px solid var(--line);
+      font: 14px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    .copy {
+      position: absolute; top: 12px; right: 12px; padding: 6px 12px; border-radius: 8px;
+      border: 1px solid var(--line); background: var(--bg); color: var(--text);
+      font: 600 13px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; cursor: pointer;
+    }
+    .copy:hover { border-color: var(--accent); color: var(--accent-strong); }
+
+    footer { padding: 34px 0 48px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14.5px; text-align: center; }
+    footer p { margin: 4px 0; }
+
+    @media (max-width: 760px) {
+      body { font-size: 16px; }
+      .hero { padding-top: 44px; }
+      .desktop-break { display: none; }
+      .highlights { grid-template-columns: 1fr; }
+      .figure { padding: 10px; }
+      .figure-media { padding: 6px; }
+      .abstract p { text-align: left; }
+      .affiliations span { display: block; white-space: normal; }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero container" id="top">
+    <p class="eyebrow">NeurIPS 2026</p>
+    <h1>
+      <span class="project-name">RVLoss</span>
+      <span class="paper-subtitle">Runoff Vote Loss for Self&#8209;Supervised<br class="desktop-break"> LiDAR Scene Flow Estimation</span>
+    </h1>
+    <p class="authors">
+      <span class="author"><a href="https://www.tudelft.nl/staff/s.wang.15/">Shiming Wang</a><sup>1</sup></span><span class="sep">·</span>
+      <span class="author"><a href="https://3d.bk.tudelft.nl/liangliang/">Liangliang Nan</a><sup>1</sup></span><span class="sep">·</span>
+      <span class="author"><a href="https://jkooij.github.io/">Julian F. P. Kooij</a><sup>1</sup></span><span class="sep">·</span>
+      <span class="author"><a href="https://sites.google.com/it-caesar.de/homepage/">Holger Caesar</a><sup>1</sup></span><span class="sep">·</span>
+      <span class="author"><a href="https://yanconglin.github.io/">Yancong Lin</a><sup>2,*</sup></span>
+    </p>
+    <p class="affiliations">
+      <span><sup>1</sup>TU Delft, the Netherlands</span>
+      <span><sup>2</sup>University of Nottingham, UK</span>
+      <span><sup>*</sup>Corresponding author</span>
+    </p>
+    <nav class="links" aria-label="Paper resources">
+      <a class="button primary" href="https://arxiv.org/abs/2608.18864">Paper (arXiv) <span aria-hidden="true">↗</span></a>
+      <span class="button soon" aria-disabled="true">Code <span class="badge">soon</span></span>
+      <span class="button soon" aria-disabled="true">Video <span class="badge">soon</span></span>
+      <span class="button soon" aria-disabled="true">Poster <span class="badge">soon</span></span>
+      <a class="button" href="#bibtex">BibTeX</a>
+    </nav>
+    <p class="notice">This is a preliminary project page. Code, videos, the poster and interactive results will be added soon.</p>
+  </header>
+
+  <main>
+    <section class="container" aria-labelledby="overview-title">
+      <h2 id="overview-title">Overview</h2>
+      <figure class="figure">
+        <div class="figure-media">
+          <img src="./static/images/fig1_runoff_vote.png" width="1704" height="633"
+               alt="Runoff vote illustration: nearest-neighbor matching yields several dominant flows within a car; translating the source by each candidate and voting again recovers the correct rigid flow.">
+        </div>
+        <figcaption>
+          <strong>The runoff vote.</strong> (a) A rigidly moving car has one consistent flow. (b) Nearest-neighbor matching, as used in Chamfer losses, breaks rigidity and produces several dominant flow candidates; the correct one may not win the first vote. (c) RVLoss translates the source by each candidate, re-matches it to the target and votes again. The candidate with the most support becomes the cluster's rigid flow.
+        </figcaption>
+      </figure>
+    </section>
+
+    <section class="container abstract" aria-labelledby="abstract-title">
+      <h2 id="abstract-title">Abstract</h2>
+      <p>
+        LiDAR scene flow estimates point-wise motion between two consecutive scans, referred to as the source and target.
+        Leading self-supervised methods typically minimize the Chamfer loss, the nearest-neighbor distance between the
+        flow-compensated source and the target. However, nearest-neighbor search does not enforce motion rigidity, often
+        leading to inconsistent flows within object instances. Existing approaches address this issue with additional
+        regularization terms, but flow consistency among points remains limited, especially for large objects. We propose
+        RVLoss, a self-supervised loss that incorporates motion rigidity by design through a runoff vote mechanism. Our key
+        observation is that the point-wise motion, calculated from nearest-neighbor search, can often be grouped into a small
+        set of dominant flow candidates by voting (top-<i>k</i> voting). Furthermore, when compensating the source by these
+        candidates, the flow that best represents the underlying rigid motion often yields the highest consensus after a
+        second voting (top-1 voting). Based on this insight, we incorporate the two-stage runoff vote into loss design and
+        create cluster-wise rigid flows and free-form flows as pseudo-labels for self-supervised learning. RVLoss can be
+        seamlessly integrated into existing feedforward architectures. Experiments on the Argoverse2 2026 Scene Flow
+        Challenge show that models trained with RVLoss achieve state-of-the-art performance among self-supervised
+        approaches, outperforming baseline models trained with alternative loss designs by 20% and reducing the mean
+        dynamic normalized end-point error from 0.202 to 0.163. Moreover, cross-dataset evaluations demonstrate consistent
+        performance improvements across four additional datasets.
+      </p>
+    </section>
+
+    <section class="container" aria-labelledby="highlights-title">
+      <h2 id="highlights-title">Highlights</h2>
+      <div class="highlights">
+        <div class="card">
+          <div class="value">0.163 <small>vs 0.202</small></div>
+          <div class="label">Mean dynamic normalized EPE on the AV2 test split</div>
+          <div class="detail">Same DeltaFlow backbone, supervised by RVLoss instead of the TeFlow loss. Lower is better.</div>
+        </div>
+        <div class="card">
+          <div class="value">5 / 5</div>
+          <div class="label">Datasets with the lowest error</div>
+          <div class="detail">Among the compared self-supervised models on AV2, Waymo, nuScenes, TruckScenes and AevaScenes, all trained on AV2 only.</div>
+        </div>
+        <div class="card">
+          <div class="value">0 ms</div>
+          <div class="label">Extra inference cost</div>
+          <div class="detail">The runoff vote runs only during training. The scene flow backbone and its inference are unchanged.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="container" id="bibtex" aria-labelledby="bibtex-title">
+      <h2 id="bibtex-title">BibTeX</h2>
+      <div class="bibtex-wrap">
+        <button class="copy" type="button" id="copy-bibtex">Copy</button>
+<pre id="bibtex-text">@inproceedings{wang2026rvloss,
+  title     = {{RVLoss}: Runoff Vote Loss for Self-Supervised {LiDAR} Scene Flow Estimation},
+  author    = {Wang, Shiming and Nan, Liangliang and Kooij, Julian F. P. and Caesar, Holger and Lin, Yancong},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2026}
+}</pre>
+      </div>
+    </section>
+  </main>
+
+  <footer class="container">
+    <p>This work was supported by the 3D Urban Understanding (3DUU) Lab funded by the TU Delft AI Initiative.</p>
+    <p><a href="https://github.com/tudelft-iv">Intelligent Vehicles group, TU Delft</a></p>
+  </footer>
+
+  <script>
+    (function () {
+      var button = document.getElementById('copy-bibtex');
+      var text = document.getElementById('bibtex-text').textContent;
+      button.addEventListener('click', function () {
+        var done = function () {
+          button.textContent = 'Copied';
+          setTimeout(function () { button.textContent = 'Copy'; }, 1600);
+        };
+        try {
+          navigator.clipboard.writeText(text).then(done, function () {});
+        } catch (e) {}
+      });
+    })();
+  </script>
+</body>
+</html>
